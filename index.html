@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Перенаправление...</title>
+    <script>
+        // Theme router - redirects to the appropriate theme based on URL parameter
+        (function() {
+            // Ручной парсинг redirect_to для корректной обработки вложенных URL с параметрами
+            const search = window.location.search;
+            let redirectTo = null;
+            
+            // Находим позицию redirect_to в строке запроса (может быть с ? или &)
+            const redirectToMatch = search.match(/[&?]redirect_to=/);
+            if (redirectToMatch) {
+                // Берём всё после redirect_to= до конца строки (т.к. он всегда последний)
+                const redirectToStart = redirectToMatch.index + redirectToMatch[0].length;
+                const redirectToValue = search.substring(redirectToStart);
+                redirectTo = decodeURIComponent(redirectToValue);
+            }
+            
+            // Удаляем redirect_to из строки для парсинга остальных параметров (theme, system)
+            const searchWithoutRedirect = search.replace(/[&?]redirect_to=.*$/, '');
+            const urlParams = new URLSearchParams(searchWithoutRedirect);
+
+            /**
+             * Detect operating system based on user agent and platform
+             * @returns {string} Theme name based on detected OS
+             */
+            function detectOS() {
+                const userAgent = navigator.userAgent.toLowerCase();
+                const platform = navigator.platform.toLowerCase();
+
+                // Windows detection
+                if (platform.indexOf('win') !== -1 || userAgent.indexOf('windows') !== -1) {
+                    return 'microsoft';
+                }
+
+                // macOS and iOS detection
+                if (platform.indexOf('mac') !== -1 ||
+                    userAgent.indexOf('macintosh') !== -1 ||
+                    userAgent.indexOf('mac os') !== -1) {
+                    return 'apple';
+                }
+                if (/iphone|ipad|ipod/.test(userAgent)) {
+                    return 'apple';
+                }
+
+                // Android detection
+                if (userAgent.indexOf('android') !== -1) {
+                    return 'google';
+                }
+
+                // Default fallback for Linux and other systems
+                return 'telegram';
+            }
+
+            // Determine theme with priority:
+            // 1. Manual theme parameter (highest priority)
+            // 2. System auto-detection (if ?system is present)
+            // 3. Default (telegram)
+            let theme;
+            if (urlParams.has('theme')) {
+                // Manual theme selection has highest priority
+                theme = urlParams.get('theme');
+            } else if (urlParams.has('system')) {
+                // Auto-detect OS and select appropriate theme
+                theme = detectOS();
+            } else {
+                // Default theme
+                theme = 'telegram';
+            }
+
+            // Get the original query string from the current URL
+            const originalQueryString = window.location.search;
+
+            // Build the theme URL and append the original query string to preserve all parameters
+            const themeURL = `themes/${theme}.html${originalQueryString}`;
+
+            // Redirect to the theme
+            window.location.replace(themeURL);
+        })();
+    </script>
+</head>
+<body>
+    <noscript>
+        <p>JavaScript is required for this redirect service to work.</p>
+        <p>Please enable JavaScript and reload the page.</p>
+    </noscript>
+</body>
+</html>
